@@ -1,0 +1,75 @@
+{
+  "Name": "Spotify Controller",
+  "Version": "1.0.0",
+  "Author": "Bruno Medeiros",
+  "Description": "Control Spotify directly from your StreamDock",
+  "Icon": "images/plugin",
+  "CategoryIcon": "images/plugin",
+  "Category": "Spotify",
+  "CodePathMac": "plugin/launch.sh",
+  "CodePathWin": "plugin/build/index.js",
+  "SDKVersion": 1,
+  "OS": [
+    { "Platform": "mac", "MinimumVersion": "10.11" },
+    { "Platform": "windows", "MinimumVersion": "10" }
+  ],
+  "Actions": [
+    {
+      "Name": "Play/Pause",
+      "UUID": "com.spotify.controller.playpause",
+      "Icon": "images/playpause",
+      "Tooltip": "Instantly play or pause Spotify",
+      "SupportedInMultiActions": false,
+      "PropertyInspectorPath": "plugin/pi.html",
+      "States": [{ "Image": "images/playpause" }]
+    },
+    {
+      "Name": "Fade Play/Pause",
+      "UUID": "com.spotify.controller.fadeplaypause",
+      "Icon": "images/fadeplaypause",
+      "Tooltip": "Gradually fade volume out then pause; fade volume in on play",
+      "SupportedInMultiActions": false,
+      "States": [{ "Image": "images/fadeplaypause" }]
+    },
+    {
+      "Name": "Next Track",
+      "UUID": "com.spotify.controller.next",
+      "Icon": "images/next",
+      "Tooltip": "Skip to the next track",
+      "SupportedInMultiActions": false,
+      "States": [{ "Image": "images/next" }]
+    },
+    {
+      "Name": "Previous Track",
+      "UUID": "com.spotify.controller.previous",
+      "Icon": "images/previous",
+      "Tooltip": "Go back to the previous track",
+      "SupportedInMultiActions": false,
+      "States": [{ "Image": "images/previous" }]
+    },
+    {
+      "Name": "Volume Up",
+      "UUID": "com.spotify.controller.volumeup",
+      "Icon": "images/volumeup",
+      "Tooltip": "Increase Spotify volume by 10%",
+      "SupportedInMultiActions": false,
+      "States": [{ "Image": "images/volumeup" }]
+    },
+    {
+      "Name": "Volume Down",
+      "UUID": "com.spotify.controller.volumedown",
+      "Icon": "images/volumedown",
+      "Tooltip": "Decrease Spotify volume by 10%",
+      "SupportedInMultiActions": false,
+      "States": [{ "Image": "images/volumedown" }]
+    },
+    {
+      "Name": "Mute",
+      "UUID": "com.spotify.controller.mute",
+      "Icon": "images/mute",
+      "Tooltip": "Toggle mute on/off, restoring previous volume on unmute",
+      "SupportedInMultiActions": false,
+      "States": [{ "Image": "images/mute" }]
+    }
+  ]
+}

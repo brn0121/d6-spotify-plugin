@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; background: #1e1e1e; color: #ccc; padding: 16px; font-size: 13px; }
+  label { display: block; margin-bottom: 4px; color: #aaa; }
+  input[type=text] { width: 100%; padding: 7px 10px; background: #2d2d2d; border: 1px solid #444; border-radius: 4px; color: #fff; font-size: 13px; }
+  input[type=text]:focus { outline: none; border-color: #1db954; }
+  button { margin-top: 10px; width: 100%; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  #btnAuth { background: #1db954; color: #fff; }
+  #btnSaveVol { background: #444; color: #fff; }
+  #status { margin-top: 10px; font-size: 12px; color: #888; min-height: 16px; }
+  #wsStatus { font-size: 11px; color: #666; margin-top: 4px; }
+  .section { margin-bottom: 14px; }
+  h3 { color: #1db954; font-size: 13px; margin-bottom: 10px; }
+  .vol-row { display: flex; align-items: center; gap: 8px; }
+  .vol-row input[type=range] { flex: 1; accent-color: #1db954; }
+  .vol-row span { min-width: 32px; text-align: right; color: #1db954; font-weight: 600; }
+</style>
+</head>
+<body>
+<h3>Spotify Controller</h3>
+
+<div class="section">
+  <label>Client ID</label>
+  <input id="clientId" type="text" placeholder="Paste your Spotify Client ID">
+</div>
+
+<div class="section">
+  <label>Fade max volume</label>
+  <div class="vol-row">
+    <input id="maxVolume" type="range" min="0" max="100" value="60">
+    <span id="maxVolumeVal">60%</span>
+  </div>
+  <button id="btnSaveVol">Save volume</button>
+</div>
+
+<button id="btnAuth">Connect to Spotify</button>
+<div id="status"></div>
+<div id="wsStatus">WS: waiting...</div>
+
+<script>
+let ws, uuid, actionUUID, context;
+
+function setWsStatus(msg) {
+    document.getElementById('wsStatus').textContent = 'WS: ' + msg;
+}
+
+function connect(port, piUUID, registerEvent, infoStr) {
+    uuid = piUUID;
+    let info = {};
+    try { info = JSON.parse(infoStr); } catch(_) {}
+    actionUUID = (info.actionInfo && info.actionInfo.action) || 'com.spotify.controller.playpause';
+    context = info.actionInfo && info.actionInfo.context;
+
+    setWsStatus('connecting on port ' + port + '...');
+
+    ws = new WebSocket('ws://127.0.0.1:' + port);
+
+    ws.onopen = () => {
+        setWsStatus('connected ✓');
+        ws.send(JSON.stringify({ event: registerEvent, uuid: piUUID }));
+    };
+
+    ws.onerror = () => setWsStatus('connection error ✗');
+    ws.onclose = () => setWsStatus('closed');
+
+    ws.onmessage = (evt) => {
+        try {
+            const msg = JSON.parse(evt.data);
+            if (msg.event === 'didReceiveGlobalSettings') {
+                const s = msg.payload && msg.payload.settings;
+                if (s && s.clientId) document.getElementById('clientId').value = s.clientId;
+                if (s && s.maxVolume != null) {
+                    document.getElementById('maxVolume').value = s.maxVolume;
+                    document.getElementById('maxVolumeVal').textContent = s.maxVolume + '%';
+                }
+                setStatus(s && s.accessToken ? '✓ Connected to Spotify' : 'Not authenticated');
+            }
+            if (msg.event === 'sendToPropertyInspector') {
+                const p = msg.payload || {};
+                if (p.status) setStatus(p.status);
+            }
+        } catch (_) {}
+    };
+}
+
+function sendToPlugin(payload) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        setWsStatus('not connected — message not sent');
+        return;
+    }
+    ws.send(JSON.stringify({
+        event: 'sendToPlugin',
+        action: actionUUID || 'com.spotify.controller.playpause',
+        context: context || uuid,
+        payload
+    }));
+}
+
+function setStatus(msg) {
+    document.getElementById('status').textContent = msg;
+}
+
+document.getElementById('maxVolume').addEventListener('input', () => {
+    const v = document.getElementById('maxVolume').value;
+    document.getElementById('maxVolumeVal').textContent = v + '%';
+});
+
+document.getElementById('btnSaveVol').addEventListener('click', () => {
+    const maxVolume = parseInt(document.getElementById('maxVolume').value, 10);
+    sendToPlugin({ action: 'setMaxVolume', maxVolume });
+    setStatus('Max volume saved: ' + maxVolume + '%');
+});
+
+document.getElementById('btnAuth').addEventListener('click', () => {
+    const clientId = document.getElementById('clientId').value.trim();
+    if (!clientId) { setStatus('Enter the Client ID first'); return; }
+    setStatus('Opening Spotify in the browser...');
+    sendToPlugin({ action: 'auth', clientId });
+});
+
+// SDK: host calls connectElgatoStreamDeckSocket; URL params as fallback for older hosts
+function connectElgatoStreamDeckSocket(port, uuid, registerEvent, info) {
+    connect(port, uuid, registerEvent, info || '{}');
+}
+
+const _p = new URLSearchParams(location.search);
+if (_p.get('port')) {
+    connect(_p.get('port'), _p.get('propertyInspectorUUID'), _p.get('registerEvent'), _p.get('info') || '{}');
+}
+</script>
+</body>
+</html>

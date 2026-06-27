@@ -1,0 +1,12 @@
+# OAuth tokens — created automatically after the user authenticates
+plugin/tokens.enc
+
+# Client ID — entered via the Property Inspector, never committed
+plugin/config.json
+
+# Runtime logs
+plugin/log/*
+!plugin/log/.gitkeep
+
+# macOS
+.DS_Store
