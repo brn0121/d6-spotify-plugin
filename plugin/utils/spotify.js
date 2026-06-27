@@ -4,8 +4,11 @@ const crypto = require('crypto');
 const { exec } = require('child_process');
 
 function openBrowser(url, log) {
-    const escaped = url.replace(/"/g, '\\"');
-    const cmd = process.platform === 'win32' ? `start "" "${escaped}"` : `/usr/bin/open "${escaped}"`;
+    // On Windows, cmd.exe interprets & as a command separator even inside quotes,
+    // breaking Spotify OAuth URLs. PowerShell Start-Process handles them correctly.
+    const cmd = process.platform === 'win32'
+        ? `powershell -NoProfile -Command "Start-Process '${url.replace(/'/g, "''")}'"`
+        : `/usr/bin/open "${url.replace(/"/g, '\\"')}"`;
     log && log.info('openBrowser cmd:', cmd.slice(0, 80));
     exec(cmd, (err, _stdout, stderr) => {
         if (err) log && log.error('openBrowser failed:', err.message, stderr);
