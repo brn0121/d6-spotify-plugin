@@ -1,19 +1,20 @@
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 
 function openBrowser(url, log) {
-    // On Windows, cmd.exe interprets & as a command separator even inside quotes,
-    // breaking Spotify OAuth URLs. PowerShell Start-Process handles them correctly.
-    const cmd = process.platform === 'win32'
-        ? `powershell -NoProfile -Command "Start-Process '${url.replace(/'/g, "''")}'"`
-        : `/usr/bin/open "${url.replace(/"/g, '\\"')}"`;
-    log && log.info('openBrowser cmd:', cmd.slice(0, 80));
-    exec(cmd, (err, _stdout, stderr) => {
+    log && log.info('openBrowser:', url.slice(0, 80));
+    const cb = (err, _out, stderr) => {
         if (err) log && log.error('openBrowser failed:', err.message, stderr);
         else log && log.info('openBrowser ok');
-    });
+    };
+    if (process.platform === 'win32') {
+        // execFile bypasses cmd.exe entirely — avoids & being interpreted as command separator
+        execFile('explorer.exe', [url], cb);
+    } else {
+        exec(`/usr/bin/open "${url.replace(/"/g, '\\"')}"`, cb);
+    }
 }
 
 const REDIRECT_URI = 'http://127.0.0.1:6545/callback';
