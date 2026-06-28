@@ -10,8 +10,10 @@ function openBrowser(url, log) {
         else log && log.info('openBrowser ok');
     };
     if (process.platform === 'win32') {
-        // execFile bypasses cmd.exe entirely — avoids & being interpreted as command separator
-        execFile('explorer.exe', [url], cb);
+        // -EncodedCommand accepts base64-encoded UTF-16LE — no shell quoting issues with & or = in OAuth URLs
+        const script = `Start-Process '${url.replace(/'/g, "''")}'`;
+        const encoded = Buffer.from(script, 'utf16le').toString('base64');
+        execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], cb);
     } else {
         exec(`/usr/bin/open "${url.replace(/"/g, '\\"')}"`, cb);
     }
