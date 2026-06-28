@@ -5,31 +5,55 @@ set "SCRIPT_DIR=%~dp0"
 set "LOGDIR=%SCRIPT_DIR%log"
 
 if not exist "%LOGDIR%" mkdir "%LOGDIR%" 2>nul
-echo [%DATE% %TIME%] launch.bat started > "%LOGDIR%\launch.log"
+echo [%DATE% %TIME%] launch.bat v1.0.6 > "%LOGDIR%\launch.log"
 echo SCRIPT_DIR: %SCRIPT_DIR% >> "%LOGDIR%\launch.log"
 
 set "NODE_EXE="
 
-if exist "%PROGRAMFILES%\HotSpot\StreamDock\Helpers\node20.exe" (
-    set "NODE_EXE=%PROGRAMFILES%\HotSpot\StreamDock\Helpers\node20.exe"
-) else if exist "%LOCALAPPDATA%\Programs\HotSpot\StreamDock\Helpers\node20.exe" (
-    set "NODE_EXE=%LOCALAPPDATA%\Programs\HotSpot\StreamDock\Helpers\node20.exe"
-) else if exist "%PROGRAMFILES(X86)%\HotSpot\StreamDock\Helpers\node20.exe" (
-    set "NODE_EXE=%PROGRAMFILES(X86)%\HotSpot\StreamDock\Helpers\node20.exe"
-) else if exist "%PROGRAMFILES%\fifine Control Deck\Helpers\node20.exe" (
-    set "NODE_EXE=%PROGRAMFILES%\fifine Control Deck\Helpers\node20.exe"
-) else if exist "%LOCALAPPDATA%\Programs\fifine Control Deck\Helpers\node20.exe" (
-    set "NODE_EXE=%LOCALAPPDATA%\Programs\fifine Control Deck\Helpers\node20.exe"
+:: Check likely locations first (fast)
+for %%N in (
+    "%LOCALAPPDATA%\HotSpot\StreamDock\Helpers\node20.exe"
+    "%LOCALAPPDATA%\Programs\HotSpot\StreamDock\Helpers\node20.exe"
+    "%PROGRAMFILES%\HotSpot\StreamDock\Helpers\node20.exe"
+    "%PROGRAMFILES(X86)%\HotSpot\StreamDock\Helpers\node20.exe"
+    "%LOCALAPPDATA%\Programs\fifine Control Deck\Helpers\node20.exe"
+    "%PROGRAMFILES%\fifine Control Deck\Helpers\node20.exe"
+) do (
+    if exist %%N (
+        set "NODE_EXE=%%~N"
+        echo Found at hardcoded path: %%~N >> "%LOGDIR%\launch.log"
+        goto :run
+    )
 )
 
-if "%NODE_EXE%"=="" (
-    echo No bundled node found, trying system node >> "%LOGDIR%\launch.log"
-    where node >> "%LOGDIR%\launch.log" 2>&1
+:: Broader search in LocalAppData
+echo Searching %LOCALAPPDATA% for node20.exe... >> "%LOGDIR%\launch.log"
+for /f "tokens=*" %%F in ('where /r "%LOCALAPPDATA%" node20.exe 2^>nul') do (
+    if "!NODE_EXE!"=="" (
+        set "NODE_EXE=%%F"
+        echo Found via search: %%F >> "%LOGDIR%\launch.log"
+    )
+)
+
+:: Broader search in Program Files
+if "!NODE_EXE!"=="" (
+    echo Searching %PROGRAMFILES% for node20.exe... >> "%LOGDIR%\launch.log"
+    for /f "tokens=*" %%F in ('where /r "%PROGRAMFILES%" node20.exe 2^>nul') do (
+        if "!NODE_EXE!"=="" (
+            set "NODE_EXE=%%F"
+            echo Found via search: %%F >> "%LOGDIR%\launch.log"
+        )
+    )
+)
+
+:: Fall back to system node
+if "!NODE_EXE!"=="" (
+    echo No node20.exe found, trying system node >> "%LOGDIR%\launch.log"
     set "NODE_EXE=node"
-) else (
-    echo Found node: %NODE_EXE% >> "%LOGDIR%\launch.log"
 )
 
-echo Running node with args: %* >> "%LOGDIR%\launch.log"
-"%NODE_EXE%" "%SCRIPT_DIR%build\index.js" %*
+:run
+echo NODE_EXE: !NODE_EXE! >> "%LOGDIR%\launch.log"
+echo Args: %* >> "%LOGDIR%\launch.log"
+"!NODE_EXE!" "%SCRIPT_DIR%build\index.js" %*
 echo Exit code: %ERRORLEVEL% >> "%LOGDIR%\launch.log"
