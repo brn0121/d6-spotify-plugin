@@ -7,7 +7,7 @@
   "CategoryIcon": "images/plugin",
   "Category": "Spotify",
   "CodePathMac": "plugin/launch.sh",
-  "CodePathWin": "plugin/build/index.js",
+  "CodePathWin": "plugin/launch.bat",
   "SDKVersion": 1,
   "OS": [
     { "Platform": "mac", "MinimumVersion": "10.11" },
