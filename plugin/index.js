@@ -115,6 +115,13 @@ const getClientId = () => settings.clientId || fileConfig.clientId;
 const isTokenValid = () =>
     settings.accessToken && settings.expiresAt && Date.now() < settings.expiresAt - 30000;
 
+const persistClientId = (clientId) => {
+    try {
+        fs.writeFileSync(configPath, JSON.stringify({ clientId }, null, 2), 'utf8');
+        fileConfig.clientId = clientId;
+    } catch (e) { log.warn('Failed to persist clientId:', e.message); }
+};
+
 const persistTokens = () => {
     plugin.setGlobalSettings(settings);
     try {
@@ -203,6 +210,20 @@ plugin.didReceiveGlobalSettings = ({ payload: { settings: s } }) => {
         settings.expiresAt    = prev.expiresAt;
         log.info('Tokens restored from file');
     }
+    // If tokens still missing but clientId is now available, try loading from file.
+    // This covers the case where config.json didn't exist at startup so the pre-load was skipped.
+    if (!settings.accessToken) {
+        const clientId = getClientId();
+        if (clientId) {
+            const saved = loadTokens(tokensPath, clientId);
+            if (saved) {
+                settings.accessToken  = saved.accessToken;
+                settings.refreshToken = saved.refreshToken;
+                settings.expiresAt    = saved.expiresAt;
+                log.info('Tokens loaded from file (deferred), expire at', new Date(saved.expiresAt).toISOString());
+            }
+        }
+    }
     const clientId = getClientId();
     log.info('Settings: clientId:', clientId ? 'ok' : 'missing', '| token:', settings.accessToken ? 'ok' : 'missing');
     updateAllIcons(settings.accessToken ? 'paused' : 'locked');
@@ -214,6 +235,7 @@ plugin.sendToPlugin = ({ payload, context }) => {
     log.info('sendToPlugin received:', JSON.stringify(payload));
     if (payload.action === 'setClientId' && payload.clientId) {
         settings.clientId = payload.clientId.trim();
+        persistClientId(settings.clientId);
         plugin.setGlobalSettings(settings);
     }
     if (payload.action === 'setMaxVolume') {
@@ -224,6 +246,7 @@ plugin.sendToPlugin = ({ payload, context }) => {
     if (payload.action === 'auth') {
         if (payload.clientId) {
             settings.clientId = payload.clientId.trim();
+            persistClientId(settings.clientId);
             plugin.setGlobalSettings(settings);
         }
         triggerAuth(context);
