@@ -2,6 +2,8 @@
 
 Control Spotify directly from your FIFINE D6 / StreamDock device. Supports play/pause, fade play/pause, next/previous track, volume control, and mute.
 
+**[Download latest release](https://github.com/brn0121/d6-spotify-plugin/releases/latest)**
+
 ---
 
 ## Requirements
