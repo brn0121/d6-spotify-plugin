@@ -34,6 +34,7 @@ cp images/*.png "$DEST/images/"
 # Plugin runtime files (no source, no dev artifacts)
 cp plugin/build/index.js "$DEST/plugin/build/"
 cp plugin/launch.sh      "$DEST/plugin/"
+cp plugin/launch.bat     "$DEST/plugin/"
 cp plugin/pi.html        "$DEST/plugin/"
 
 # Placeholder so the log directory exists in the repo
